@@ -110,7 +110,13 @@ func decrypt(blob []byte, kp *KeyPair) ([]byte, error) {
 	return plaintext, nil
 }
 
-// DecryptOPData01 parses, authenticates, and decrypts opdata01 blobs.
+// DecryptOPData01 parses, authenticates, and decrypts OPData01 blobs. The
+// OPData01 format is:
+//     8  bytes - "opdata01"
+//     8  bytes - plaintext length, uint64_t, little endian
+//     16 bytes - IV
+//     variable - ciphertext
+//     32 bytes - MAC
 func DecryptOPData01(opdata []byte, kp *KeyPair) ([]byte, error) {
 	opdata, err := authenticate(opdata, kp)
 	if err != nil {
@@ -148,7 +154,11 @@ func DecryptOPData01(opdata []byte, kp *KeyPair) ([]byte, error) {
 	return plaintext[padLen:len(plaintext)], nil
 }
 
-// DecryptItemKey parses, authenticates, and decrypts item encryption and MAC keys.
+// DecryptItemKey parses, authenticates, and decrypts item key blobs. Item Key
+// blobs have the format:
+//     16 bytes - IV
+//     64 bytes - Ciphertext
+//     32 bytes - MAC
 func DecryptItemKey(itemKey []byte, kp *KeyPair) (*KeyPair, error) {
 	itemKey, err := authenticate(itemKey, kp)
 	if err != nil {

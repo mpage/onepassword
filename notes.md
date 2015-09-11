@@ -14,7 +14,6 @@ Data Format
 - 8  bytes - string "opdata01"
 - 8  bytes - plaintext length; uint64_t, little endian
 - 16 bytes - IV
-- variable - padding
 - variable - ciphertext
 - 32 bytes - MAC
 
