@@ -71,28 +71,23 @@ func itemFixture() (*item) {
 
 func TestDecryptMasterKey(t *testing.T) {
 	profile := profileFixture()
+	derKP := ComputeDerivedKeys(masterPass, profile.Salt, profile.Iterations)
 
-	derivedEncKey, derivedMACKey := ComputeDerivedKeys(masterPass, profile.Salt, profile.Iterations)
-
-	// Get the master key
-	mkDec := NewOPDataDecoder(derivedEncKey, derivedMACKey)
-	masterKey, err := mkDec.Decode(profile.MasterKey)
+	// Get the master item keys
+	masterKP, err := DecryptMasterKeys(profile.MasterKey, derKP)
 	if err != nil {
-		t.Fatalf("Failed decrypting master key: %s", err.Error())
+		t.Fatalf("Failed decrypting master item keys: %s", err.Error())
 	}
-	masterEncKey, masterMACKey := ComputeMasterKeys(masterKey)
 
 	// Get the item key
-	ikDec := NewItemKeyDecoder(masterEncKey, masterMACKey)
 	item := itemFixture()
-	itemEncKey, itemMACKey, err := ikDec.Decode(item.Key)
+	itemKP, err := DecryptItemKey(item.Key, masterKP)
 	if err != nil {
-		t.Fatalf("Failed decrypting item key: %s", err.Error())
+		t.Fatalf("Failed decrypting item keys: %s", err.Error())
 	}
 
 	// Get details
-	detDec := NewOPDataDecoder(itemEncKey, itemMACKey)
-	details, err := detDec.Decode(item.Details)
+	details, err := DecryptOPData01(item.Details, itemKP)
 	if err != nil {
 		t.Fatalf("Failed decrypting details: %s", err.Error())
 	} else if string(details) != decryptedItemDetails {
