@@ -4,14 +4,17 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os/user"
+	"path"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
-	DefaultProfile         = "default"
-	DefaultSQLiteVaultPath = "/Users/mpage/Library/Containers/2BUA8C4S2C.com.agilebits.onepassword-osx-helper/Data/Library/Data/OnePassword.sqlite"
+	DefaultProfile          = "default"
+	// Relative to user's home dir
+	RelativeSQLiteVaultPath = "Library/Containers/2BUA8C4S2C.com.agilebits.onepassword-osx-helper/Data/Library/Data/OnePassword.sqlite"
 )
 
 type SQLiteVault struct {
@@ -47,8 +50,17 @@ func (cfg *SQLiteVaultConfig) Merge(other *SQLiteVaultConfig) (*SQLiteVaultConfi
 	return ret
 }
 
+func resolveDefaultDBPath() string {
+	u, err := user.Current()
+	if err != nil {
+		panic(fmt.Sprintf("Cannot resolve current user: %s", err.Error()))
+	}
+
+	return path.Join(u.HomeDir, RelativeSQLiteVaultPath)
+}
+
 var DefaultSQLiteVaultConfig = &SQLiteVaultConfig{
-	DBPath: DefaultSQLiteVaultPath,
+	DBPath: resolveDefaultDBPath(),
 	Profile: DefaultProfile,
 }
 
