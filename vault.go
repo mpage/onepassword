@@ -192,6 +192,18 @@ func MatchTags(tags ...string) ItemMatcher {
 	}
 }
 
+// MatchOr implements logical or for the supplied matchers
+func MatchOr(matchers ...ItemMatcher) ItemMatcher {
+	return func(o *ItemOverview) bool {
+		for _, m := range(matchers) {
+			if m(o) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 type matchedItem struct {
 	overview ItemOverview
 	kp       *KeyPair
