@@ -28,10 +28,10 @@ type Category struct {
 }
 
 type ItemOverview struct {
-	Title string   `json:"title"`
-	Url   string   `json:"url"`
-	Tags  []string `json:"tags"`
-	Cat   Category
+	Title    string   `json:"title"`
+	Url      string   `json:"url"`
+	Tags     []string `json:"tags"`
+	Cat      Category
 }
 
 type Item struct {

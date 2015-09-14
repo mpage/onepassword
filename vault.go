@@ -217,7 +217,7 @@ func (v *SQLiteVault) LookupItems(m ItemMatcher) ([]Item, error) {
 		rows, e := tx.Query(
 			"SELECT id, category_uuid, key_data, overview_data" +
 			" FROM items" +
-			" WHERE profile_id = ?",
+			" WHERE profile_id = ? AND trashed = 0",
 			v.profileId)
 		if e != nil {
 			return
