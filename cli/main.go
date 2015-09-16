@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -36,6 +37,12 @@ func GetPassword() string {
 	return pass
 }
 
+func PrintItem(item onepassword.Item) {
+	overviewJson, err := json.Marshal(&item.Overview)
+	MustSucceed("serializing item", err)
+	fmt.Printf("{\"overview\": %s, \"details\": %s}\n", overviewJson, item.Details)
+}
+
 func main() {
 	flag.Usage = Usage
 	var vaultPath = flag.String("vault-path",
@@ -68,6 +75,6 @@ func main() {
 	items, err := vault.LookupItems(onepassword.MatchTitle(re))
 	MustSucceed("looking up items", err)
 	for _, item := range(items) {
-		fmt.Printf("%s\n", item.Details)
+		PrintItem(item)
 	}
 }

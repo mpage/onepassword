@@ -23,15 +23,15 @@ var (
 )
 
 type Category struct {
-	Uuid string
-	Name string
+	Uuid string `json: "uuid"`
+	Name string `json: "name"`
 }
 
 type ItemOverview struct {
 	Title    string   `json:"title"`
 	Url      string   `json:"url"`
 	Tags     []string `json:"tags"`
-	Cat      Category
+	Cat      Category `json:"cat"`
 }
 
 type Item struct {
