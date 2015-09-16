@@ -50,7 +50,10 @@ func main() {
 		Usage()
 		os.Exit(1)
 	}
-	title := flag.Arg(0)
+
+	titleRe := flag.Arg(0)
+	re, err := onepassword.RegexpMatch(titleRe)
+	MustSucceed("compiling regexp", err)
 
 	pass := GetPassword()
 
@@ -59,11 +62,11 @@ func main() {
 		Profile: *profile,
 	}
 	vault, err := onepassword.NewSQLiteVault(pass, &config)
-	MustSucceed("Opening vault", err)
+	MustSucceed("opening vault", err)
 	defer vault.Close()
 
-	items, err := vault.LookupItems(onepassword.MatchTitle(title))
-	MustSucceed("Looking up items", err)
+	items, err := vault.LookupItems(onepassword.MatchTitle(re))
+	MustSucceed("looking up items", err)
 	for _, item := range(items) {
 		fmt.Printf("%s\n", item.Details)
 	}

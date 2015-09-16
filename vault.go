@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/user"
 	"path"
+	"regexp"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -156,14 +157,36 @@ func NewSQLiteVault(masterPass string, ucfg *SQLiteVaultConfig) (*SQLiteVault, e
 	return v, nil
 }
 
+// A ValueMatcher returns true if the string matches and false otherwise.
+type ValueMatcher func(string) bool
+
+// ExactMatch returns true if the strings match exactly.
+func ExactMatch(target string) ValueMatcher {
+	return func(cand string) bool {
+		return target == cand
+	}
+}
+
+// RegexpMatch returns true if value matches re.
+func RegexpMatch(re string) (ValueMatcher, error) {
+	compiledRe, err := regexp.Compile(re)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(cand string) bool {
+		return compiledRe.MatchString(cand)
+	}, nil
+}
+
 // An ItemMatcher is used when searching for items in the 1p database. It
 // returns true if the item is a match and false otherwise.
 type ItemMatcher func(*ItemOverview) bool
 
 // MatchTitle matches item overviews with the supplied title
-func MatchTitle(title string) ItemMatcher {
+func MatchTitle(vmatch ValueMatcher) ItemMatcher {
 	return func(o *ItemOverview) bool {
-		return o.Title == title
+		return vmatch(o.Title)
 	}
 }
 
@@ -174,21 +197,15 @@ func MatchAny() ItemMatcher {
 	}
 }
 
-// MatchTags matches item overviews with all of the supplied tags
-func MatchTags(tags ...string) ItemMatcher {
+// MatchTag matches item overviews with the supplied tag
+func MatchTag(tagMatcher ValueMatcher) ItemMatcher {
 	return func(o *ItemOverview) bool {
-		tagMap := make(map[string]bool)
 		for _, tag := range(o.Tags) {
-			tagMap[tag] = true
-		}
-
-		for _, tag := range(tags) {
-			_, exists := tagMap[tag]
-			if !exists {
-				return false
+			if tagMatcher(tag) {
+				return true
 			}
 		}
-		return true
+		return false
 	}
 }
 
