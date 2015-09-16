@@ -7,7 +7,7 @@ A read-only interface to the Onepassword sqlite database.
 The following example shows how to query the onepassword database for items
 whose title matches the regular expression ```AWS```.
 
-```
+```Go
 // Open the vault
 vault, err := onepassword.NewSQLiteVault("password", nil)
 if err != nil {
