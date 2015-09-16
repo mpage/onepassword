@@ -11,21 +11,21 @@ whose title matches the regular expression ```AWS```.
 // Open the vault
 vault, err := onepassword.NewSQLiteVault("password", nil)
 if err != nil {
-       // Handle error
+       panic(fmt.Sprintf("Failed opening vault: %s", err.Error())
 }
 defer vault.Close()
 
 // Find items whose title matches "AWS"
 re, err := onepassword.RegexpMatch("AWS")
 if err != nil {
-       // Handle error
+       panic(fmt.Sprintf("Invalid regexp: %s", err.Error()))
 }
 query := onepassword.MatchTitle(re)
 
 // Do something with the matches.
 items, err := vault.LookupItems(query)
 if err != nil {
-        // Handle error
+       panic(fmt.Sprintf("Failed looking up items: %s", err.Error()))
 }
 for _, item := range(items) {
        fmt.Printf("%s\n", item.Details)
