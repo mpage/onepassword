@@ -7,12 +7,11 @@ import (
 	"os"
 
 	"github.com/mpage/onepassword"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 func Usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s [flags] [title]\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "\nPrint item details for items with title [title]\n\n")
+	fmt.Fprintf(os.Stderr, "Usage: %s [flags] [regexp]\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "\nPrint item details for items with title matching [regexp]\n\n")
 	fmt.Fprintf(os.Stderr, "Flags:\n")
 	flag.PrintDefaults()
 }
@@ -22,19 +21,6 @@ func MustSucceed(action string, err error) {
 		fmt.Fprintf(os.Stderr, "Failed %s: %s\n", action, err.Error())
 		os.Exit(1)
 	}
-}
-
-func GetPassword() string {
-	oldState, err := terminal.MakeRaw(0)
-	MustSucceed("Reading password", err)
-	defer terminal.Restore(0, oldState)
-
-	term := terminal.NewTerminal(os.Stdin, "")
-
-	pass, err := term.ReadPassword("password: ")
-	MustSucceed("Reading password", err)
-
-	return pass
 }
 
 func PrintItem(item onepassword.Item) {
@@ -62,7 +48,8 @@ func main() {
 	re, err := onepassword.RegexpMatch(titleRe)
 	MustSucceed("compiling regexp", err)
 
-	pass := GetPassword()
+	pass, err := onepassword.ReadPassword("password: ")
+	MustSucceed("reading password", err)
 
 	config := onepassword.SQLiteVaultConfig{
 		DBPath: *vaultPath,
