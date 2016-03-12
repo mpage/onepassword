@@ -164,7 +164,7 @@ type matchedItem struct {
 	kp       *KeyPair
 }
 
-// LookupItems finds items in the 1Password database.
+// LookupItems finds items in the 1Password database that match the supplied predicate.
 func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 	var items []Item
 

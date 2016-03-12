@@ -5,7 +5,7 @@ import (
 )
 
 func TestStringEquals(t *testing.T) {
-	spf := StringPredicateFactory{}
+	spf := SPFactory{}
 	cases := []struct{
 		S1 string
 		S2 string
@@ -23,7 +23,7 @@ func TestStringEquals(t *testing.T) {
 }
 
 func TestStringMatches(t *testing.T) {
-	spf := StringPredicateFactory{}
+	spf := SPFactory{}
 	cases := []struct{
 		Regex   string
 		S       string
@@ -41,7 +41,7 @@ func TestStringMatches(t *testing.T) {
 }
 
 func TestAnyTag(t *testing.T) {
-	tpf := TagPredicateFactory{}
+	tpf := TPFactory{}
 	strs := []string{"foo", "bar"}
 	p := func (s string) bool { return s == "foo" }
 	if !tpf.Any(p)(strs) {
@@ -55,7 +55,7 @@ func TestAnyTag(t *testing.T) {
 }
 
 func TestAllTags(t *testing.T) {
-	tpf := TagPredicateFactory{}
+	tpf := TPFactory{}
 	strs := []string{"foo", "bar"}
 	p := func (s string) bool { return s == "foo" || s == "bar" }
 	if !tpf.All(p)(strs) {
@@ -69,7 +69,7 @@ func TestAllTags(t *testing.T) {
 }
 
 func TestTitlePredicate(t *testing.T) {
-	ipf := ItemOverviewPredicateFactory{}
+	ipf := IOPFactory{}
 	p := func (s string) bool { return s == "foo" }
 	io := &ItemOverview{
 		Title: "foo",
@@ -80,8 +80,8 @@ func TestTitlePredicate(t *testing.T) {
 }
 
 func TestUrlPredicate(t *testing.T) {
-	spf := StringPredicateFactory{}
-	ipf := ItemOverviewPredicateFactory{}
+	spf := SPFactory{}
+	ipf := IOPFactory{}
 	io := &ItemOverview{
 		Url: "www.foo.com",
 	}
@@ -91,9 +91,9 @@ func TestUrlPredicate(t *testing.T) {
 }
 
 func TestTagsPredicate(t *testing.T) {
-	spf := StringPredicateFactory{}
-	tpf := TagPredicateFactory{}
-	ipf := ItemOverviewPredicateFactory{}
+	spf := SPFactory{}
+	tpf := TPFactory{}
+	ipf := IOPFactory{}
 	io := &ItemOverview{
 		Tags: []string{"foo", "bar"},
 	}
@@ -103,8 +103,8 @@ func TestTagsPredicate(t *testing.T) {
 }
 
 func TestAndItemOverviewPredicates(t *testing.T) {
-	spf := StringPredicateFactory{}
-	ipf := ItemOverviewPredicateFactory{}
+	spf := SPFactory{}
+	ipf := IOPFactory{}
 	io := &ItemOverview{
 		Title: "Foo",
 		Url: "www.foo.com",
@@ -128,8 +128,8 @@ func TestAndItemOverviewPredicates(t *testing.T) {
 }
 
 func TestOrItemOverviewPredicates(t *testing.T) {
-	spf := StringPredicateFactory{}
-	ipf := ItemOverviewPredicateFactory{}
+	spf := SPFactory{}
+	ipf := IOPFactory{}
 	io := &ItemOverview{
 		Title: "Foo",
 		Url: "www.foo.com",

@@ -45,8 +45,8 @@ func main() {
 	}
 
 	titleRe := flag.Arg(0)
-	spf := onepassword.StringPredicateFactory{}
-	ipf := onepassword.ItemOverviewPredicateFactory{}
+	spf := onepassword.SPFactory{}
+	ipf := onepassword.IOPFactory{}
 	pred := ipf.Title(spf.Matches(titleRe))
 
 	pass, err := onepassword.ReadPassword("password: ")

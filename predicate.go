@@ -4,38 +4,43 @@ import (
 	"regexp"
 )
 
-// StringPredicates match strings (shocker!)
+// A StringPredicate matches a string. These are used against individual fields
+// (e.g. Title, Url) and individual tags of an Item.
 type StringPredicate func(string) bool
 
-type StringPredicateFactory struct {
+// SPFactory constructs StringPredicates
+type SPFactory struct {
 }
 
-func (StringPredicateFactory) Equals(a string) StringPredicate {
+// Equals constructs a predicate that tests string equality with str.
+func (SPFactory) Equals(str string) StringPredicate {
 	return func(b string) bool {
-		return a == b
+		return str == b
 	}
 }
 
-// Matches returns a predicate that returns true if a string matches the
-// supplied regexp
-func (StringPredicateFactory) Matches(re string) StringPredicate {
-	compiled := regexp.MustCompile(re)
+// Matches constructs a predicate that tests regular expression matching using
+// regex.
+func (SPFactory) Matches(regex string) StringPredicate {
+	compiled := regexp.MustCompile(regex)
 	return func(s string) bool {
 		return compiled.MatchString(s)
 	}
 }
 
-// TagPredicate matches lists of strings (tags)
+// A TagPredicate matches against item tags.
 type TagPredicate func([]string) bool
 
-type TagPredicateFactory struct {
+// TPFactory constructs TagPredicates
+type TPFactory struct {
 }
 
-// Any returns true if the supplied predicate is true for any tag
-func (TagPredicateFactory) Any(p StringPredicate) TagPredicate {
+// Any constructs a higher order predicate that returns true if pred is true
+// for any tag.
+func (TPFactory) Any(pred StringPredicate) TagPredicate {
 	return func(tags []string) bool {
 		for _, tag := range tags {
-			if p(tag) {
+			if pred(tag) {
 				return true
 			}
 		}
@@ -43,11 +48,12 @@ func (TagPredicateFactory) Any(p StringPredicate) TagPredicate {
 	}
 }
 
-// All returns true if the supplied predicate is true for all tags
-func (TagPredicateFactory) All(p StringPredicate) TagPredicate {
+// All constructs a higher order predicate that returns true if pred is true
+// for all tags.
+func (TPFactory) All(pred StringPredicate) TagPredicate {
 	return func(tags []string) bool {
 		for _, tag := range tags {
-			if !p(tag) {
+			if !pred(tag) {
 				return false
 			}
 		}
@@ -55,37 +61,42 @@ func (TagPredicateFactory) All(p StringPredicate) TagPredicate {
 	}
 }
 
-// ItemOverviewPredicates are used to select items from the 1password database
+// An ItemOverviewPredicate acts as a query to the 1Password database. It is
+// used by Vault.LookupItems to find items in the database.
 type ItemOverviewPredicate func(*ItemOverview) bool
 
-type ItemOverviewPredicateFactory struct {
+// IOPFactory constructs ItemOverviewPredicates
+type IOPFactory struct {
 }
 
-// Title constructs a predicate that matches against the Title of an ItemOverview
-func (ItemOverviewPredicateFactory) Title(p StringPredicate) ItemOverviewPredicate {
+// Title constructs a higher order predicate that applies pred to the Title
+// field of an ItemOverview.
+func (IOPFactory) Title(pred StringPredicate) ItemOverviewPredicate {
 	return func(iov *ItemOverview) bool {
-		return p(iov.Title)
+		return pred(iov.Title)
 	}
 }
 
-// Url constructs a predicate that matches against the Url of an ItemOverview
-func (ItemOverviewPredicateFactory) Url(p StringPredicate) ItemOverviewPredicate {
+// Url constructs a higher order predicate that applies pred to the Url field
+// of an ItemOverview.
+func (IOPFactory) Url(pred StringPredicate) ItemOverviewPredicate {
 	return func(iov *ItemOverview) bool {
-		return p(iov.Url)
+		return pred(iov.Url)
 	}
 }
 
-// Tags constructs a predicate that matches against the tags of an ItemOverview
-func (ItemOverviewPredicateFactory) Tags(p TagPredicate) ItemOverviewPredicate {
+// Tags constructs a higher order predicate that applies pred to the Tags field
+// of an ItemOverview.
+func (IOPFactory) Tags(pred TagPredicate) ItemOverviewPredicate {
 	return func(iov *ItemOverview) bool {
-		return p(iov.Tags)
+		return pred(iov.Tags)
 	}
 }
 
-// And implements logical and over the supplied ItemOverviewPredicates
-func (ItemOverviewPredicateFactory) And(ps []ItemOverviewPredicate) ItemOverviewPredicate {
+// And constructs a higher order predicate that performs logical and of preds.
+func (IOPFactory) And(preds []ItemOverviewPredicate) ItemOverviewPredicate {
 	return func (iov *ItemOverview) bool {
-		for _, p := range ps {
+		for _, p := range preds {
 			if !p(iov) {
 				return false
 			}
@@ -94,10 +105,10 @@ func (ItemOverviewPredicateFactory) And(ps []ItemOverviewPredicate) ItemOverview
 	}
 }
 
-// Or implements logical or over the supplied ItemOverviewPredicates
-func (ItemOverviewPredicateFactory) Or(ps []ItemOverviewPredicate) ItemOverviewPredicate {
+// And constructs a higher order predicate that performs logical or of preds.
+func (IOPFactory) Or(preds []ItemOverviewPredicate) ItemOverviewPredicate {
 	return func (iov *ItemOverview) bool {
-		for _, p := range ps {
+		for _, p := range preds {
 			if p(iov) {
 				return true
 			}
