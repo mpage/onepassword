@@ -45,8 +45,9 @@ func main() {
 	}
 
 	titleRe := flag.Arg(0)
-	re, err := onepassword.RegexpMatch(titleRe)
-	MustSucceed("compiling regexp", err)
+	spf := onepassword.StringPredicateFactory{}
+	ipf := onepassword.ItemOverviewPredicateFactory{}
+	pred := ipf.Title(spf.Matches(titleRe))
 
 	pass, err := onepassword.ReadPassword("password: ")
 	MustSucceed("reading password", err)
@@ -59,7 +60,7 @@ func main() {
 	MustSucceed("opening vault", err)
 	defer vault.Close()
 
-	items, err := vault.LookupItems(onepassword.MatchTitle(re))
+	items, err := vault.LookupItems(pred)
 	MustSucceed("looking up items", err)
 	for _, item := range(items) {
 		PrintItem(item)

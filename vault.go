@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os/user"
 	"path"
-	"regexp"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -31,6 +30,8 @@ type SQLiteVaultConfig struct {
 	Profile string  // Name of 1p profile
 }
 
+// Merge merges the two configs together. Properties in the supplied config
+// take precedence.
 func (cfg *SQLiteVaultConfig) Merge(other *SQLiteVaultConfig) (*SQLiteVaultConfig) {
 	ret := &SQLiteVaultConfig{}
 
@@ -40,12 +41,12 @@ func (cfg *SQLiteVaultConfig) Merge(other *SQLiteVaultConfig) (*SQLiteVaultConfi
 
 	ret.DBPath = cfg.DBPath
 	if other.DBPath != "" {
-		cfg.DBPath = other.DBPath
+		ret.DBPath = other.DBPath
 	}
 
 	ret.Profile = cfg.Profile
 	if other.Profile != "" {
-		cfg.Profile = other.Profile
+		ret.Profile = other.Profile
 	}
 
 	return ret
@@ -54,7 +55,7 @@ func (cfg *SQLiteVaultConfig) Merge(other *SQLiteVaultConfig) (*SQLiteVaultConfi
 func resolveDefaultDBPath() string {
 	u, err := user.Current()
 	if err != nil {
-		panic(fmt.Sprintf("Cannot resolve current user: %s", err.Error()))
+		panic(fmt.Sprintf("Cannot resolve current user: %s", err))
 	}
 
 	return path.Join(u.HomeDir, RelativeSQLiteVaultPath)
@@ -157,77 +158,13 @@ func NewSQLiteVault(masterPass string, ucfg *SQLiteVaultConfig) (*SQLiteVault, e
 	return v, nil
 }
 
-// A ValueMatcher returns true if the string matches and false otherwise.
-type ValueMatcher func(string) bool
-
-// ExactMatch returns true if the strings match exactly.
-func ExactMatch(target string) ValueMatcher {
-	return func(cand string) bool {
-		return target == cand
-	}
-}
-
-// RegexpMatch returns true if value matches re.
-func RegexpMatch(re string) (ValueMatcher, error) {
-	compiledRe, err := regexp.Compile(re)
-	if err != nil {
-		return nil, err
-	}
-
-	return func(cand string) bool {
-		return compiledRe.MatchString(cand)
-	}, nil
-}
-
-// An ItemMatcher is used when searching for items in the 1p database. It
-// returns true if the item is a match and false otherwise.
-type ItemMatcher func(*ItemOverview) bool
-
-// MatchTitle matches item overviews with the supplied title
-func MatchTitle(vmatch ValueMatcher) ItemMatcher {
-	return func(o *ItemOverview) bool {
-		return vmatch(o.Title)
-	}
-}
-
-// MatchAny matches everything
-func MatchAny() ItemMatcher {
-	return func(o *ItemOverview) bool {
-		return true
-	}
-}
-
-// MatchTag matches item overviews with the supplied tag
-func MatchTag(tagMatcher ValueMatcher) ItemMatcher {
-	return func(o *ItemOverview) bool {
-		for _, tag := range(o.Tags) {
-			if tagMatcher(tag) {
-				return true
-			}
-		}
-		return false
-	}
-}
-
-// MatchOr implements logical or for the supplied matchers
-func MatchOr(matchers ...ItemMatcher) ItemMatcher {
-	return func(o *ItemOverview) bool {
-		for _, m := range(matchers) {
-			if m(o) {
-				return true
-			}
-		}
-		return false
-	}
-}
-
 type matchedItem struct {
 	overview ItemOverview
 	kp       *KeyPair
 }
 
 // LookupItems finds items in the 1p database.
-func (v *SQLiteVault) LookupItems(m ItemMatcher) ([]Item, error) {
+func (v *SQLiteVault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 	var items []Item
 
 	err := transact(v.db, func(tx *sql.Tx) (e error) {
@@ -268,7 +205,7 @@ func (v *SQLiteVault) LookupItems(m ItemMatcher) ([]Item, error) {
 			}
 			iov.Cat = Category{catUuid, v.categories[catUuid]}
 
-			if m(&iov) {
+			if pred(&iov) {
 				// Decrypt the item key
 				var kp *KeyPair
 				kp, e = DecryptItemKey(itemKeyBlob, v.masterKP)
