@@ -118,7 +118,7 @@ func NewSQLiteVault(masterPass string, ucfg *SQLiteVaultConfig) (*SQLiteVault, e
 			cfg.Profile)
 		e := row.Scan(&profileId, &nIters, &masterKeyBlob, &overviewKeyBlob, &salt)
 		if e == sql.ErrNoRows {
-			e = fmt.Errorf("No profile named '%s'", cfg.Profile)
+			e = fmt.Errorf("no profile named %q", cfg.Profile)
 		}
 		return e
 	})
@@ -132,19 +132,19 @@ func NewSQLiteVault(masterPass string, ucfg *SQLiteVaultConfig) (*SQLiteVault, e
 	mkp, err := DecryptMasterKeys(masterKeyBlob, derKP)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("Failed decoding master key: %s", err.Error())
+		return nil, err
 	}
 	okp, err := DecryptMasterKeys(overviewKeyBlob, derKP)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("Failed decoding overview key: %s", err.Error())
+		return nil, err
 	}
 
 	// Get category index
 	cats, err := getCategories(db, profileId)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("Failed fetching categories: %s", err.Error())
+		return nil, err
 	}
 
 	v := &SQLiteVault{

@@ -20,13 +20,13 @@ const (
 )
 
 var (
-	ErrIncompleteHeader     = errors.New("Incomplete header")
-	ErrIncompleteCiphertext = errors.New("Incomplete ciphertext")
-	ErrIncompleteIV         = errors.New("Incomplete IV")
-	ErrIncompleteMagic      = errors.New("Incomplete magic")
-	ErrIncompleteMAC        = errors.New("Incomplete MAC")
-	ErrIncorrectMAC         = errors.New("Incorrect MAC")
-	ErrInvalidMagic         = errors.New("Invalid magic")
+	ErrIncompleteHeader     = errors.New("incomplete header")
+	ErrIncompleteCiphertext = errors.New("incomplete ciphertext")
+	ErrIncompleteIV         = errors.New("incomplete IV")
+	ErrIncompleteMagic      = errors.New("incomplete magic")
+	ErrIncompleteMAC        = errors.New("incomplete MAC")
+	ErrIncorrectMAC         = errors.New("incorrect MAC")
+	ErrInvalidMagic         = errors.New("invalid magic")
 
 	OPData01Magic           = []byte("opdata01")
 )
