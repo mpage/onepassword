@@ -32,10 +32,10 @@ func PrintItem(item onepassword.Item) {
 func main() {
 	flag.Usage = Usage
 	var vaultPath = flag.String("vault-path",
-		onepassword.DefaultSQLiteVaultConfig.DBPath,
+		onepassword.DefaultVaultConfig.DBPath,
 		"Path to the onepassword sqlite database.")
 	var profile = flag.String("profile",
-		onepassword.DefaultSQLiteVaultConfig.Profile,
+		onepassword.DefaultVaultConfig.Profile,
 		"The onepassword profile that to use.")
 	flag.Parse()
 
@@ -52,11 +52,11 @@ func main() {
 	pass, err := onepassword.ReadPassword("password: ")
 	MustSucceed("reading password", err)
 
-	config := onepassword.SQLiteVaultConfig{
+	config := onepassword.VaultConfig{
 		DBPath: *vaultPath,
 		Profile: *profile,
 	}
-	vault, err := onepassword.NewSQLiteVault(pass, &config)
+	vault, err := onepassword.NewVault(pass, &config)
 	MustSucceed("opening vault", err)
 	defer vault.Close()
 

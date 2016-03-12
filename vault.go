@@ -12,12 +12,13 @@ import (
 )
 
 const (
-	DefaultProfile          = "default"
+	DefaultProfile    = "default"
 	// Relative to user's home dir
-	RelativeSQLiteVaultPath = "Library/Containers/2BUA8C4S2C.com.agilebits.onepassword-osx-helper/Data/Library/Data/OnePassword.sqlite"
+	RelativeVaultPath = "Library/Containers/2BUA8C4S2C.com.agilebits.onepassword-osx-helper/Data/Library/Data/OnePassword.sqlite"
 )
 
-type SQLiteVault struct {
+// A Vault is a read-only interface to the 1Password SQLite database.
+type Vault struct {
 	db          *sql.DB
 	profileId   int
 	masterKP    *KeyPair           // Encrypts item keypairs
@@ -25,18 +26,18 @@ type SQLiteVault struct {
 	categories  map[string]string  // For uuid -> name
 }
 
-type SQLiteVaultConfig struct {
+type VaultConfig struct {
 	DBPath  string  // Path to the sqlite file
 	Profile string  // Name of 1p profile
 }
 
-// Merge merges the two configs together. Properties in the supplied config
-// take precedence.
-func (cfg *SQLiteVaultConfig) Merge(other *SQLiteVaultConfig) (*SQLiteVaultConfig) {
-	ret := &SQLiteVaultConfig{}
+// Merge merges the two configs together. Properties in other take precedence
+// over properties in cfg.
+func (cfg *VaultConfig) Merge(other *VaultConfig) (*VaultConfig) {
+	ret := &VaultConfig{}
 
 	if other == nil {
-		other = &SQLiteVaultConfig{}
+		other = &VaultConfig{}
 	}
 
 	ret.DBPath = cfg.DBPath
@@ -58,10 +59,10 @@ func resolveDefaultDBPath() string {
 		panic(fmt.Sprintf("Cannot resolve current user: %s", err))
 	}
 
-	return path.Join(u.HomeDir, RelativeSQLiteVaultPath)
+	return path.Join(u.HomeDir, RelativeVaultPath)
 }
 
-var DefaultSQLiteVaultConfig = &SQLiteVaultConfig{
+var DefaultVaultConfig = &VaultConfig{
 	DBPath: resolveDefaultDBPath(),
 	Profile: DefaultProfile,
 }
@@ -100,8 +101,8 @@ func getCategories(db *sql.DB, profileId int) (map[string]string, error) {
 	return cats, err
 }
 
-func NewSQLiteVault(masterPass string, ucfg *SQLiteVaultConfig) (*SQLiteVault, error) {
-	cfg := DefaultSQLiteVaultConfig.Merge(ucfg)
+func NewVault(masterPass string, ucfg *VaultConfig) (*Vault, error) {
+	cfg := DefaultVaultConfig.Merge(ucfg)
 	db, err := sql.Open("sqlite3", cfg.DBPath)
 	if err != nil {
 		return nil, err
@@ -147,7 +148,7 @@ func NewSQLiteVault(masterPass string, ucfg *SQLiteVaultConfig) (*SQLiteVault, e
 		return nil, err
 	}
 
-	v := &SQLiteVault{
+	v := &Vault{
 		db: db,
 		profileId: profileId,
 		masterKP: mkp,
@@ -163,8 +164,8 @@ type matchedItem struct {
 	kp       *KeyPair
 }
 
-// LookupItems finds items in the 1p database.
-func (v *SQLiteVault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
+// LookupItems finds items in the 1Password database.
+func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 	var items []Item
 
 	err := transact(v.db, func(tx *sql.Tx) (e error) {
@@ -273,6 +274,6 @@ func (v *SQLiteVault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 	return items, err
 }
 
-func (v *SQLiteVault) Close() {
+func (v *Vault) Close() {
 	v.db.Close()
 }
