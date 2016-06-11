@@ -34,6 +34,20 @@ type ItemOverview struct {
 	Cat      Category `json:"cat"`
 }
 
+type Field struct {
+	Value string `json:"v"`
+	Name  string `json:"t"`
+}
+
+type Section struct {
+	Fields []Field `json:"fields"`
+}
+
+type Note struct {
+	Sections    []Section `json:"sections"`
+	Description string    `json:"notesPlain"`
+}
+
 type Item struct {
 	Overview  ItemOverview
 	Details   []byte // JSON encoded object. Structure is based on category.
