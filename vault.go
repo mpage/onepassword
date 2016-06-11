@@ -164,6 +164,10 @@ type matchedItem struct {
 	kp       *KeyPair
 }
 
+// An ItemOverviewPredicate acts as a query to the 1Password database. It returns true
+// if an ItemOverview is deemed a match. Otherwise it returns false.
+type ItemOverviewPredicate func(*ItemOverview) bool
+
 // LookupItems finds items in the 1Password database that match the supplied predicate.
 func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 	var items []Item
