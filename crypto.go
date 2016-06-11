@@ -31,7 +31,8 @@ var (
 	OPData01Magic           = []byte("opdata01")
 )
 
-// KeyPair holds an encryption and MAC key used to store data in the vault.
+// KeyPair holds an encryption and MAC key used to encrypt and authenticate
+// data stored in the vault.
 type KeyPair struct {
 	EncKey []byte
 	MACKey []byte
@@ -44,8 +45,8 @@ func ComputeDerivedKeys(pass string, salt []byte, nIters int) (*KeyPair) {
 	return &KeyPair{data[0:32], data[32:64]}
 }
 
-// DecryptMasterKeys returns a "master" keypair given opdata. Use this to decode
-// both the master item keys and master overview keys.
+// DecryptMasterKeys decrypts a master keypair from an OPData blob. Use this to
+// decode both the master item keys and master overview keys.
 func DecryptMasterKeys(opdata []byte, derivedKeys *KeyPair) (*KeyPair, error) {
 	mkData, err := DecryptOPData01(opdata, derivedKeys)
 	if err != nil {
@@ -55,9 +56,12 @@ func DecryptMasterKeys(opdata []byte, derivedKeys *KeyPair) (*KeyPair, error) {
 	return &KeyPair{data[0:32], data[32:64]}, nil
 }
 
-// authenticate verifies the mac on the supplied blob. The supplied blob is
-// expected to be in the format data + MAC. On success, authenticate returns
-// a new slice containing only the verified data.
+// authenticate verifies the MAC on the supplied blob. The blob is expected to
+// be in the format:
+//     Variable - Data
+//     32 Bytes - MAC
+// On success, authenticate returns a new slice containing only the verified
+// data.
 func authenticate(blob []byte, kp *KeyPair) ([]byte, error) {
 	if len(blob) < sha256.Size {
 		return nil, ErrIncompleteMAC
@@ -76,8 +80,9 @@ func authenticate(blob []byte, kp *KeyPair) ([]byte, error) {
 	return data, nil
 }
 
-// decrypt decrypts the supplied blob. The blob is expected to be in the format
-// IV + ciphertext.
+// decrypt decrypts the supplied blob. The blob is expected to be in the format:
+//     16 bytes - IV
+//     Variable - Ciphertext
 func decrypt(blob []byte, kp *KeyPair) ([]byte, error) {
 	r := bytes.NewReader(blob)
 
@@ -112,10 +117,11 @@ func decrypt(blob []byte, kp *KeyPair) ([]byte, error) {
 
 // DecryptOPData01 parses, authenticates, and decrypts OPData01 blobs. The
 // OPData01 format is:
-//     8  bytes - "opdata01"
-//     8  bytes - plaintext length, uint64_t, little endian
+//     8  bytes - The magic string "opdata01"
+//     8  bytes - The length of the plaintext as a uint64_t in little endian
+//                byte order.
 //     16 bytes - IV
-//     variable - ciphertext
+//     Variable - Ciphertext
 //     32 bytes - MAC
 func DecryptOPData01(opdata []byte, kp *KeyPair) ([]byte, error) {
 	opdata, err := authenticate(opdata, kp)

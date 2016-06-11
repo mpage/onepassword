@@ -8,8 +8,8 @@ App Store:
 Web Store:
 ~/Library/Application Support/1Password 4/Data/OnePassword.sqlite
 
-Data Format
-===========
+OPData Format
+=============
 
 - 8  bytes - string "opdata01"
 - 8  bytes - plaintext length; uint64_t, little endian
