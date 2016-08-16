@@ -31,28 +31,6 @@ type VaultConfig struct {
 	Profile string  // Name of 1p profile
 }
 
-// Merge merges the two configs together. Properties in other take precedence
-// over properties in cfg.
-func (cfg *VaultConfig) Merge(other *VaultConfig) (*VaultConfig) {
-	ret := &VaultConfig{}
-
-	if other == nil {
-		other = &VaultConfig{}
-	}
-
-	ret.DBPath = cfg.DBPath
-	if other.DBPath != "" {
-		ret.DBPath = other.DBPath
-	}
-
-	ret.Profile = cfg.Profile
-	if other.Profile != "" {
-		ret.Profile = other.Profile
-	}
-
-	return ret
-}
-
 func resolveDefaultDBPath() string {
 	u, err := user.Current()
 	if err != nil {
@@ -62,7 +40,7 @@ func resolveDefaultDBPath() string {
 	return path.Join(u.HomeDir, RelativeVaultPath)
 }
 
-var DefaultVaultConfig = &VaultConfig{
+var DefaultVaultConfig = VaultConfig{
 	DBPath: resolveDefaultDBPath(),
 	Profile: DefaultProfile,
 }
@@ -101,8 +79,7 @@ func getCategories(db *sql.DB, profileId int) (map[string]string, error) {
 	return cats, err
 }
 
-func NewVault(masterPass string, ucfg *VaultConfig) (*Vault, error) {
-	cfg := DefaultVaultConfig.Merge(ucfg)
+func NewVault(masterPass string, cfg VaultConfig) (*Vault, error) {
 	db, err := sql.Open("sqlite3", cfg.DBPath)
 	if err != nil {
 		return nil, err
@@ -209,7 +186,6 @@ func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 				return
 			}
 			iov.Cat = Category{catUuid, v.categories[catUuid]}
-
 			if pred(&iov) {
 				// Decrypt the item key
 				var kp *KeyPair
