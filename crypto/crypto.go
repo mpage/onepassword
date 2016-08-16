@@ -1,4 +1,4 @@
-package onepassword
+package crypto
 
 import (
 	"bytes"

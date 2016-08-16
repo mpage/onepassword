@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/mpage/onepassword/crypto"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -21,8 +22,8 @@ const (
 type Vault struct {
 	db          *sql.DB
 	profileId   int
-	masterKP    *KeyPair           // Encrypts item keypairs
-	overviewKP  *KeyPair           // Encrypts overviews
+	masterKP    *crypto.KeyPair    // Encrypts item keypairs
+	overviewKP  *crypto.KeyPair    // Encrypts overviews
 	categories  map[string]string  // For uuid -> name
 }
 
@@ -106,13 +107,13 @@ func NewVault(masterPass string, cfg VaultConfig) (*Vault, error) {
 	}
 
 	// Decrypt master/overview keypairs
-	derKP := ComputeDerivedKeys(masterPass, salt, nIters)
-	mkp, err := DecryptMasterKeys(masterKeyBlob, derKP)
+	derKP := crypto.ComputeDerivedKeys(masterPass, salt, nIters)
+	mkp, err := crypto.DecryptMasterKeys(masterKeyBlob, derKP)
 	if err != nil {
 		db.Close()
 		return nil, err
 	}
-	okp, err := DecryptMasterKeys(overviewKeyBlob, derKP)
+	okp, err := crypto.DecryptMasterKeys(overviewKeyBlob, derKP)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -138,7 +139,7 @@ func NewVault(masterPass string, cfg VaultConfig) (*Vault, error) {
 
 type matchedItem struct {
 	overview ItemOverview
-	kp       *KeyPair
+	kp       *crypto.KeyPair
 }
 
 // An ItemOverviewPredicate acts as a query to the 1Password database. It returns true
@@ -174,7 +175,7 @@ func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 
 			// Decrypt the overview
 			var overview []byte
-			overview, e = DecryptOPData01(opdata, v.overviewKP)
+			overview, e = crypto.DecryptOPData01(opdata, v.overviewKP)
 			if e != nil {
 				return
 			}
@@ -188,8 +189,8 @@ func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 			iov.Cat = Category{catUuid, v.categories[catUuid]}
 			if pred(&iov) {
 				// Decrypt the item key
-				var kp *KeyPair
-				kp, e = DecryptItemKey(itemKeyBlob, v.masterKP)
+				var kp *crypto.KeyPair
+				kp, e = crypto.DecryptItemKey(itemKeyBlob, v.masterKP)
 				if e != nil {
 					return
 				}
@@ -231,7 +232,7 @@ func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 
 			// Decrypt the details
 			var details []byte
-			details, e = DecryptOPData01(opdata, matches[itemId].kp)
+			details, e = crypto.DecryptOPData01(opdata, matches[itemId].kp)
 			if e != nil {
 				return
 			}
