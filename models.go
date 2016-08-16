@@ -27,13 +27,6 @@ type Category struct {
 	Name string `json: "name"`
 }
 
-type ItemOverview struct {
-	Title    string   `json:"title"`
-	Url      string   `json:"url"`
-	Tags     []string `json:"tags"`
-	Cat      Category `json:"cat"`
-}
-
 type Field struct {
 	Value string `json:"v"`
 	Name  string `json:"t"`
@@ -49,6 +42,9 @@ type Note struct {
 }
 
 type Item struct {
-	Overview  ItemOverview
+	Title     string   `json:"title"`
+	Url       string   `json:"url"`
+	Tags      []string `json:"tags"`
+	Category  Category `json:"cat"`
 	Details   []byte // JSON encoded object. Structure is based on category.
 }

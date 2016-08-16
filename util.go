@@ -6,7 +6,7 @@ import 	(
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-// Read a password from stdin
+// Read a password from stdin without echoing input to stdout.
 func ReadPassword(prompt string) (string, error) {
 	oldState, err := terminal.MakeRaw(0)
 	if err != nil {

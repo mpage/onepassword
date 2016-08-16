@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os/user"
 	"path"
-	"strings"
 
 	"github.com/mpage/onepassword/crypto"
 	_ "github.com/mattn/go-sqlite3"
@@ -137,17 +136,12 @@ func NewVault(masterPass string, cfg VaultConfig) (*Vault, error) {
 	return v, nil
 }
 
-type matchedItem struct {
-	overview ItemOverview
-	kp       *crypto.KeyPair
-}
-
-// An ItemOverviewPredicate acts as a query to the 1Password database. It returns true
-// if an ItemOverview is deemed a match. Otherwise it returns false.
-type ItemOverviewPredicate func(*ItemOverview) bool
+// An ItemPredicate acts as a query to the 1Password database. It returns true
+// if an Item in the database is deemed a match. Otherwise it returns false.
+type ItemPredicate func(*Item) bool
 
 // LookupItems finds items in the 1Password database that match the supplied predicate.
-func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
+func (v *Vault) LookupItems(pred ItemPredicate) ([]Item, error) {
 	var items []Item
 
 	err := transact(v.db, func(tx *sql.Tx) (e error) {
@@ -162,8 +156,6 @@ func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 		defer rows.Close()
 
 		// Figure out matches
-		matchIds := make([]int, 0, 10)
-		matches := make(map[int]*matchedItem)
 		for rows.Next() {
 			var itemId int
 			var catUuid string
@@ -179,73 +171,42 @@ func (v *Vault) LookupItems(pred ItemOverviewPredicate) ([]Item, error) {
 			if e != nil {
 				return
 			}
-
-			// Check for a match
-			var iov ItemOverview
-			e = json.Unmarshal(overview, &iov)
+			var item Item
+			e = json.Unmarshal(overview, &item)
 			if e != nil {
 				return
 			}
-			iov.Cat = Category{catUuid, v.categories[catUuid]}
-			if pred(&iov) {
-				// Decrypt the item key
-				var kp *crypto.KeyPair
-				kp, e = crypto.DecryptItemKey(itemKeyBlob, v.masterKP)
-				if e != nil {
-					return
-				}
-				matchIds = append(matchIds, itemId)
-				matches[itemId] = &matchedItem{iov, kp}
-			}
-		}
-		e = rows.Err()
-		if e != nil {
-			return
-		}
+			item.Category = Category{catUuid, v.categories[catUuid]}
 
-		// Ughhhhhh ... grab match details
-		var qargs []interface{}
-		var qs []string
-		for _, id := range(matchIds) {
-			qs = append(qs, "?")
-			qargs = append(qargs, id)
-		}
-		query := fmt.Sprintf(
-			"SELECT item_id, data" +
-			" FROM item_details" +
-			" WHERE item_id IN (%s)",
-			strings.Join(qs, ", "))
-		detRows, e := tx.Query(query, qargs...)
-		if e != nil {
-			return
-		}
-		defer detRows.Close()
-
-		// Decrypt match details and fill in items
-		for detRows.Next() {
-			var itemId int
-			var opdata []byte
-			e = detRows.Scan(&itemId, &opdata)
+			// Decrypt the item key
+			var kp *crypto.KeyPair
+			kp, e = crypto.DecryptItemKey(itemKeyBlob, v.masterKP)
 			if e != nil {
 				return
 			}
 
-			// Decrypt the details
+			// Decrypt the item details
+			detRow := tx.QueryRow(
+				"SELECT data FROM item_details" +
+				" WHERE item_id = ?", itemId)
+			var detailsCT []byte
+			e = detRow.Scan(&detailsCT)
+			if e != nil {
+				return
+			}
 			var details []byte
-			details, e = crypto.DecryptOPData01(opdata, matches[itemId].kp)
+			details, e = crypto.DecryptOPData01(detailsCT, kp)
 			if e != nil {
 				return
 			}
+			item.Details = details
 
-			items = append(items, Item{matches[itemId].overview, details})
+			if pred(&item) {
+				items = append(items, item)
+			}
 		}
-		e = detRows.Err()
-		if e != nil {
-			return
-		}
 
-
-		return nil
+		return rows.Err()
 	})
 
 	if err != nil {
